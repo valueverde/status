@@ -218,12 +218,30 @@ article .graph {
    `assets/` is copied OVER the exported site by uptime-monitor's `site` command
    (`cp -r ../assets/* status-page/__sapper__/export`), so these files REPLACE
    the originals rather than merging with them — the base has to be carried
-   along or the page loses its layout entirely.
+   along or the page loses its layout entirely. Upstream's rules are left intact
+   and overridden below rather than edited in place, so a future upstream bump
+   is a diff of the top half only.
 
    Below is the valueverde Style Sheet applied on top: the same type system,
-   palette, radii and elevations the portal and the API docs use. The colour
-   tokens themselves live in themes/light.css and themes/dark.css, because that
-   is the seam upstream already provides; this file owns type and geometry.
+   palette, radii and elevations the portal and the API docs use. Colour lives
+   in themes/light.css, because that is the seam upstream already provides;
+   this file owns type, geometry and layout.
+
+   The page is light-only, set as `status-website.theme: light` in
+   .upptimerc.yml. That is upstream's own switch: with no theme named it links
+   light.css and dark.css behind `prefers-color-scheme`, so the page followed
+   the reader's OS and most readers never saw the brand at all.
+
+   Load order matters and is already correct: the Svelte chunks in client/*.css
+   are linked before themes/*.css and global.css, so equal-specificity rules
+   here win without !important. Where !important does appear below it is
+   because upstream used it first.
+
+   Selectors avoid the `svelte-<hash>` classes on purpose — those hashes change
+   whenever upstream rebuilds, and a stylesheet pinned to them would fail
+   silently on the next version bump. Everything here keys off structure
+   (`main > article`, `section.live-status`) or upstream's stable semantic
+   classes (`.up`, `.down`, `.degraded`, `.link`, `.data`, `.f`, `.r`).
    =========================================================================== */
 
 :root {
@@ -237,15 +255,20 @@ article .graph {
   --vv-radius-sm: 8px;
   --vv-radius-xs: 4px;
 
-  /* Style Sheet gives exactly two elevations. */
+  /* Style Sheet gives exactly two elevations, and no third. */
   --vv-shadow-sm: 0 4px 20px rgb(0 0 0 / 0.10);
   --vv-shadow-lg: 0 10px 20px rgb(0 0 0 / 0.10);
+
+  --vv-ease: cubic-bezier(0.25, 0.46, 0.45, 0.94);
 }
+
+/* --- Type ---------------------------------------------------------------- */
 
 body {
   font-family: var(--vv-font-sans);
   font-size: 15px;
   line-height: 1.7;
+  padding-bottom: 0;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
@@ -254,56 +277,372 @@ body {
 code, .f code { font-family: var(--vv-font-mono); font-size: 88%; }
 
 /* The page title is the one brand display heading, as on the website and the
-   portal. Everything below it stays in Geist — a serif section heading reads
-   as decoration on a page people open when something is broken. */
+   portal. Everything below it stays in Geist — a serif section heading reads as
+   decoration on a page people open when something is broken. */
 h1 {
   font-family: var(--vv-font-serif);
   font-weight: 500;
-  font-size: 2.25rem;
-  letter-spacing: -0.015em;
-  line-height: 1.15;
+  font-size: clamp(2rem, 1.4rem + 2vw, 2.75rem);
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+  margin: 0;
 }
 h2, h3, h4 {
   font-family: var(--vv-font-sans);
   font-weight: 600;
   letter-spacing: -0.01em;
 }
-h2 { font-size: 1.15rem; }
-h3 { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.06em; opacity: 1; color: var(--vv-text-muted); }
+h2 { font-size: 1.1rem; margin: 0; }
 h4 { font-size: 1rem; font-weight: 600; }
 
-.container { max-width: 880px; padding: 0 1.5rem; }
+/* Section sub-labels — the incident dates. Small, uppercase, muted: a date is
+   an index, not a headline. */
+h3 {
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
+  opacity: 1;
+  color: var(--vv-text-muted);
+  margin: 0 0 0.6rem;
+}
+
+.container { max-width: 940px; padding: 0 1.5rem; }
 
 /* --- Navigation ---------------------------------------------------------- */
+
 nav {
+  position: sticky;
+  top: 0;
+  z-index: 20;
   backdrop-filter: saturate(180%) blur(20px);
   -webkit-backdrop-filter: saturate(180%) blur(20px);
 }
 nav a { font-weight: 500; font-size: 0.9rem; letter-spacing: -0.005em; }
+nav ul a { color: var(--vv-text-muted); transition: color 0.15s var(--vv-ease); }
+nav ul a:hover { color: var(--vv-ink); }
+nav [aria-current] { color: var(--vv-ink); }
+
 /* The lockup is a wordmark, not an icon: cap it by height and let it keep its
    aspect ratio, the same rule the docs navbar uses. */
 nav img, nav svg { height: 1.6rem !important; width: auto !important; }
 
-/* --- Status cards -------------------------------------------------------- */
+/* --- Header -------------------------------------------------------------- */
+
+main.container { padding-top: 3rem; }
+
+main > header { margin-bottom: 2rem; }
+main > header .lead {
+  font-size: 1.0625rem;
+  line-height: 1.65;
+  color: var(--vv-text-muted);
+  max-width: 62ch;
+  margin: 0.9rem 0 0;
+}
+main > header .lead a { color: var(--vv-teal); text-underline-offset: 2px; }
+
+/* --- The overall-status banner ------------------------------------------- */
+/*
+ * `main > article` is the summary banner and nothing else — every per-endpoint
+ * card lives inside a <section>. This is the one element on the page that gets
+ * a filled brand colour, because it is the one element that answers the
+ * question the reader actually came with.
+ *
+ * Operational is lime on ink: the Style Sheet's primary pairing, and the reason
+ * the page looks like valueverde rather than like every other status page. Down
+ * is the negative highlight, which has to shout. The emoji is upstream's, baked
+ * into the markup as a text node, so it cannot be styled away — both colours
+ * are chosen to carry it.
+ */
+main.container > article {
+  margin: 0 0 3rem;
+  padding: 1.15rem 1.5rem;
+  border: 0;
+  border-radius: var(--vv-radius-md);
+  font-size: 1.0625rem;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+}
+main.container > article.up {
+  background: var(--vv-lime);
+  color: var(--vv-ink);
+}
+main.container > article.down,
+main.container > article.down-active {
+  background: var(--vv-negative);
+  color: #ffffff;
+}
+main.container > article.degraded {
+  background: var(--vv-yellow);
+  color: var(--vv-ink);
+}
+
+/* --- Section heading row and the range selector -------------------------- */
+
+main > div.f {
+  align-items: baseline;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+/* Upstream ships the range picker as radio+label pairs. Rendered raw they are
+   five words in a row that do not look clickable; as a segmented control they
+   read as the control they are. */
+form.f.r {
+  gap: 2px;
+  padding: 3px;
+  background: var(--vv-n-100);
+  border-radius: var(--vv-radius-sm);
+  flex-wrap: nowrap;
+}
+form.f.r input { position: absolute; opacity: 0; width: 0; height: 0; }
+form.f.r label {
+  display: block;
+  padding: 0.28rem 0.7rem;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  color: var(--vv-text-muted);
+  cursor: pointer;
+  transition: background 0.15s var(--vv-ease), color 0.15s var(--vv-ease);
+}
+form.f.r label:hover { color: var(--vv-ink); }
+form.f.r input:checked + label {
+  background: #ffffff;
+  color: var(--vv-teal);
+  font-weight: 600;
+  box-shadow: 0 1px 2px rgb(0 0 0 / 0.08);
+}
+form.f.r input:focus-visible + label { outline: 2px solid var(--vv-accent); outline-offset: 2px; }
+
+/* --- Cards, shared ------------------------------------------------------- */
+
 article {
   border-radius: var(--vv-radius-md);
-  padding: 1.15rem 1.35rem;
-  transition: box-shadow 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94),
-              transform 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  border: 1px solid var(--card-border-color);
+  transition: box-shadow 0.2s var(--vv-ease), border-color 0.2s var(--vv-ease);
 }
-article + article { margin-top: 0.75rem; }
-article.link:hover { box-shadow: var(--vv-shadow-sm); }
 
-/* The status stripe. Upstream squares off the left edge with a flat 0.2rem
-   border; keeping the corner radius means the stripe follows the card instead
-   of cutting a notch out of it. */
-article.up, article.down, article.degraded { border-left-width: 3px; }
+/* Upstream marks status with a 0.2rem left border. That stripe is replaced
+   below by a status dot on the card title: the dot sits next to the name it
+   describes, survives a stacked mobile layout, and does not fight the card's
+   corner radius. Overridden rather than deleted upstream — see the note at the
+   top of this layer. */
+article.up, article.down, article.degraded {
+  border-left-width: 1px !important;
+  border-left-color: var(--card-border-color) !important;
+}
 
-article h4 { letter-spacing: -0.01em; }
-dl dt { font-weight: 500; color: var(--vv-text-muted); }
+article.link:hover {
+  box-shadow: var(--vv-shadow-sm);
+  border-color: var(--vv-n-200);
+}
+
+/* The status dot, replacing upstream's left stripe.
+ *
+ * The base rule is deliberately class-free (`main article h4::before`) so that
+ * every state rule below, which adds one class, outranks it. Scoping the base
+ * to `section.live-status article` instead would tie or beat the state rules on
+ * specificity and paint every dot grey — which it did, silently, since a dot
+ * that renders in the wrong colour still renders. */
+main article h4::before {
+  content: "";
+  flex: none;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--vv-n-400);
+  box-shadow: 0 0 0 3px var(--vv-n-100);
+}
+main article.up h4::before {
+  background: var(--vv-positive);
+  box-shadow: 0 0 0 3px var(--vv-ring-positive);
+}
+main article.down h4::before,
+main article.down-active h4::before {
+  background: var(--vv-negative);
+  box-shadow: 0 0 0 3px var(--vv-ring-negative);
+}
+main article.degraded h4::before {
+  background: var(--vv-yellow);
+  box-shadow: 0 0 0 3px var(--vv-ring-warning);
+}
+
+/* --- Live status cards --------------------------------------------------- */
+/*
+ * One row per endpoint: name on the left, the two numbers right-aligned on the
+ * right. Upstream stacks all three, which turns six endpoints into a page and a
+ * half of scrolling — on a status page the whole point is taking it in at a
+ * glance, without scrolling at all.
+ */
+section.live-status { display: grid; gap: 0.6rem; }
+
+section.live-status article {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  column-gap: 2.75rem;
+  margin: 0;
+  padding: 1rem 1.35rem;
+}
+
+section.live-status article h4 {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  margin: 0;
+  min-width: 0;
+  letter-spacing: -0.01em;
+}
+section.live-status article h4 a { text-decoration: none; }
+
+/* Upstream fetches a favicon per endpoint from icons.duckduckgo.com. It renders
+   as a grey placeholder for every one of our hosts (an API does not serve a
+   favicon), and it sends every visitor's browser — and our hostnames — to a
+   third party on page load, which a status page has no business doing. The dot
+   above replaces it. */
+section.live-status article h4 img.icon { display: none; }
+
+/* The metric label is a bare text node next to the value, so the label is
+   styled on the wrapper and undone on the value. `text-transform` has to be
+   reset explicitly or "1104 ms" renders as "1104 MS". */
+section.live-status article > div {
+  text-align: right;
+  font-size: 0.62rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  line-height: 1.5;
+  color: var(--vv-n-500);
+  white-space: nowrap;
+}
+section.live-status article > div .data {
+  display: block;
+  text-transform: none;
+  letter-spacing: -0.015em;
+  font-size: 1.15rem;
+  font-weight: 500;
+  line-height: 1.3;
+  color: var(--vv-ink);
+  font-variant-numeric: tabular-nums;
+}
+
+/* A failing endpoint gets a wash and a warmer edge as well as a red dot. One
+   signal is a design; two is a design that still works for the eight percent of
+   men who cannot reliably separate the red dot from the green one. */
+section.live-status article.down,
+section.live-status article.down-active {
+  background: var(--vv-negative-wash);
+  border-color: var(--vv-negative-edge) !important;
+}
+section.live-status article.down > div .data { color: var(--vv-negative); }
+
+@media (max-width: 640px) {
+  section.live-status article {
+    grid-template-columns: 1fr 1fr;
+    row-gap: 0.9rem;
+    column-gap: 1rem;
+  }
+  section.live-status article h4 { grid-column: 1 / -1; }
+  section.live-status article > div { text-align: left; }
+}
+
+/* --- Small screens -------------------------------------------------------- */
+/*
+ * Upstream's navbar is a single non-wrapping row. At 390px the wordmark plus
+ * the site name push the three links clean off the right edge — not truncated,
+ * gone, with no way to reach the docs or the incident list. The name is the
+ * first thing the <h1> says two lines further down, so it is the part that goes.
+ */
+@media (max-width: 640px) {
+  nav .container {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    row-gap: 0.35rem;
+    column-gap: 1rem;
+    padding-top: 0.6rem;
+    padding-bottom: 0.6rem;
+  }
+  nav .logo div { display: none; }
+  nav img, nav svg { height: 1.35rem !important; }
+
+  /* Upstream pads each link by 32px a side — 409px of links in a 360px
+     container, which is what pushed them off the edge and then onto a second
+     row. The gap does the spacing instead. */
+  nav ul { flex-wrap: nowrap; gap: 1.4rem; }
+  nav ul a { padding: 0.35rem 0 !important; font-size: 0.85rem; }
+
+  main.container { padding-top: 2rem; }
+  main.container > article { margin-bottom: 2rem; }
+  main > section > h2 { margin-top: 2.25rem; }
+
+  /* The incident CTA drops below the summary rather than squeezing beside it. */
+  section:not(.live-status) article .f { flex-wrap: wrap; row-gap: 0.75rem; }
+  section:not(.live-status) article .f.r { width: 100%; }
+}
+
+/* --- Past incidents ------------------------------------------------------ */
+
+main > section > h2 { margin: 3rem 0 0.9rem; }
+
+section:not(.live-status) article { padding: 1rem 1.35rem; }
+section:not(.live-status) article + article { margin-top: 0.6rem; }
+
+section:not(.live-status) article h4 {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  margin: 0 0 0.1rem;
+}
+section:not(.live-status) article h4 + div {
+  font-size: 0.875rem;
+  color: var(--vv-text-muted);
+  padding-left: 1.3rem;
+}
+
+/* The incident link is the page's only call to action, so it takes the Style
+   Sheet's special-button pair: neutral and quiet at rest, green and ringed on
+   hover. Upstream lays a full-card ::after over this anchor, so the button
+   lights up from anywhere on the card — the card is the target, the button just
+   says so. */
+section:not(.live-status) article .f.r a {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.45rem 0.85rem;
+  border-radius: var(--vv-radius-sm);
+  background: var(--vv-n-100);
+  color: var(--vv-ink);
+  font-size: 0.85rem;
+  font-weight: 500;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: background 0.2s var(--vv-ease), color 0.2s var(--vv-ease),
+              box-shadow 0.2s var(--vv-ease);
+}
+section:not(.live-status) article .f.r a:hover {
+  background: var(--vv-positive);
+  color: #ffffff;
+  box-shadow: 0 0 0 3px var(--vv-ring-positive);
+}
+
+/* --- Detail pages: response-time graphs ---------------------------------- */
+
+article .graph { margin-top: 0.75rem; border-radius: var(--vv-radius-sm); }
+
+dl dt {
+  font-weight: 600;
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--vv-text-muted);
+}
 dl dd { font-variant-numeric: tabular-nums; }
 
 /* --- Tags and buttons ---------------------------------------------------- */
+
 .tag {
   border-radius: var(--vv-radius-xs);
   font-family: var(--vv-font-sans);
@@ -315,12 +654,38 @@ dl dd { font-variant-numeric: tabular-nums; }
 }
 
 a.error-button, .submit-button {
-  border-radius: var(--vv-radius-xs);
+  border-radius: var(--vv-radius-sm);
   font-family: var(--vv-font-sans);
   font-weight: 500;
-  transition: opacity 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  transition: opacity 0.2s var(--vv-ease);
 }
 a.error-button:hover, .submit-button:hover { opacity: 0.88; }
 
-:focus-visible { outline: 2px solid var(--vv-accent); outline-offset: 2px; border-radius: var(--vv-radius-xs); }
+/* --- Footer -------------------------------------------------------------- */
+
+footer {
+  margin-top: 4rem;
+  padding: 1.5rem 1.5rem 2.5rem;
+  border-top: 1px solid var(--vv-n-150);
+}
+footer p {
+  max-width: 940px;
+  margin: 0 auto;
+  text-align: center;
+  font-size: 0.85rem;
+  color: var(--vv-text-muted);
+}
+footer a { color: var(--vv-teal); text-underline-offset: 2px; }
+
+/* --- Focus and selection -------------------------------------------------- */
+
+:focus-visible {
+  outline: 2px solid var(--vv-accent);
+  outline-offset: 2px;
+  border-radius: var(--vv-radius-xs);
+}
 ::selection { background: var(--vv-selection); color: inherit; }
+
+@media (prefers-reduced-motion: reduce) {
+  * { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; }
+}
