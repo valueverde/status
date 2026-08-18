@@ -1,0 +1,65 @@
+/* valueverde status page — light theme.
+ *
+ * Colour values are the valueverde Style Sheet verbatim, the same ones
+ * docs.valueverde.de and the portal are built from. Upstream's theme files are
+ * a flat set of custom properties, which is a good seam: branding the page is
+ * mapping our palette onto their names, not fighting their CSS.
+ *
+ * The canvas is the Style Sheet's off-white (#F7F6F4) with white cards, so the
+ * teal and the status colours carry all the colour on the page.
+ */
+:root {
+  /* -- Style Sheet palette -- */
+  --vv-teal: #105A5B;
+  --vv-lime: #D3F89B;
+  --vv-ink: #02012D;
+  --vv-off-white: #F7F6F4;
+  --vv-positive: #43B34F;
+  --vv-negative: #FF4E22;
+  --vv-warning: #FAE17A;
+
+  --vv-text-muted: #727272;
+  --vv-accent: var(--vv-teal);
+  --vv-selection: rgb(16 90 91 / 0.20);
+
+  /* -- Upstream's token names, mapped onto the above -- */
+  --body-background-color: var(--vv-off-white);
+  --body-text-color: var(--vv-ink);
+  --card-background-color: #ffffff;
+  --card-border-color: #E0E0E0;
+
+  --nav-background-color: rgb(247 246 244 / 0.85);
+  --nav-border-bottom-color: #E0E0E0;
+  --nav-current-border-bottom-color: var(--vv-teal);
+
+  /* Status. Green and the red-orange are the Style Sheet's own positive and
+     negative; amber is the secondary yellow, which needs dark text on it. */
+  --up-border-left-color: var(--vv-positive);
+  --down-border-left-color: var(--vv-negative);
+  --degraded-border-left-color: var(--vv-warning);
+  --down-background-color: rgb(255 78 34 / 0.06);
+
+  --tag-color: #ffffff;
+  --tag-up-background-color: var(--vv-positive);
+  --tag-down-background-color: var(--vv-negative);
+  --tag-degraded-background-color: var(--vv-warning);
+
+  --change-background-color: rgb(250 225 122 / 0.35);
+
+  --code-color: var(--vv-teal);
+  --code-background-color: rgb(16 90 91 / 0.08);
+
+  --submit-button-background-color: var(--vv-teal);
+  --submit-button-border-color: var(--vv-teal);
+  --submit-button-color: #ffffff;
+  --error-button-background-color: var(--vv-teal);
+  --error-button-border-color: var(--vv-teal);
+  --error-button-color: #ffffff;
+
+  --graph-opacity: 1;
+  --graph-filter: none;
+}
+
+/* The degraded tag is the one status whose background is light enough that
+   white text on it fails contrast — it takes ink instead. */
+.tag.degraded { color: var(--vv-ink) !important; }

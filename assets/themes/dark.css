@@ -1,0 +1,63 @@
+/* valueverde status page — dark theme.
+ *
+ * The Style Sheet specifies no dark mode, so this is derived exactly the way
+ * docs.valueverde.de derives its own: the tertiary ink (#02012D) becomes the
+ * canvas, and the teal is lifted to #35A79E because #105A5B is unreadable on a
+ * dark ground. Keeping the same derivation means the two sites stay in step if
+ * either is retuned.
+ */
+:root {
+  /* -- Style Sheet palette -- */
+  --vv-teal: #35A79E;          /* lifted for dark; #105A5B is the light value */
+  --vv-lime: #D3F89B;
+  --vv-ink: #02012D;
+  --vv-positive: #43B34F;
+  --vv-negative: #FF4E22;
+  --vv-warning: #FAE17A;
+
+  --vv-text-muted: #9BA0C4;
+  --vv-accent: var(--vv-teal);
+  --vv-selection: rgb(53 167 158 / 0.25);
+
+  /* -- Upstream's token names, mapped onto the above -- */
+  --body-background-color: var(--vv-ink);
+  --body-text-color: #F3F6FF;
+  --card-background-color: #0A0937;
+  --card-border-color: #22214F;
+
+  --nav-background-color: rgb(10 9 55 / 0.85);
+  --nav-border-bottom-color: #22214F;
+  /* Lime, not teal: on ink it is the teal's partner on the Style Sheet and the
+     only accent with enough lift to read as "you are here". */
+  --nav-current-border-bottom-color: var(--vv-lime);
+
+  --up-border-left-color: var(--vv-positive);
+  --down-border-left-color: var(--vv-negative);
+  --degraded-border-left-color: var(--vv-warning);
+  --down-background-color: rgb(255 78 34 / 0.10);
+
+  --tag-color: var(--vv-ink);
+  --tag-up-background-color: var(--vv-positive);
+  --tag-down-background-color: var(--vv-negative);
+  --tag-degraded-background-color: var(--vv-warning);
+
+  --change-background-color: rgb(250 225 122 / 0.20);
+
+  --code-color: var(--vv-lime);
+  --code-background-color: rgb(211 248 155 / 0.10);
+
+  --submit-button-background-color: var(--vv-teal);
+  --submit-button-border-color: var(--vv-teal);
+  --submit-button-color: var(--vv-ink);
+  --error-button-background-color: var(--vv-teal);
+  --error-button-border-color: var(--vv-teal);
+  --error-button-color: var(--vv-ink);
+
+  /* The response-time graphs are rendered light; dimming beats recolouring. */
+  --graph-opacity: 0.9;
+  --graph-filter: none;
+}
+
+/* White on the positive green is fine; on lime/amber it is not. */
+.tag.up { color: #ffffff !important; }
+.tag.degraded { color: var(--vv-ink) !important; }
