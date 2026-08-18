@@ -61,3 +61,9 @@
 /* White on the positive green is fine; on lime/amber it is not. */
 .tag.up { color: #ffffff !important; }
 .tag.degraded { color: var(--vv-ink) !important; }
+
+/* Upptime takes a single `logoUrl`, but the valueverde wordmark ships in two
+   colourways and the light one is all but invisible on ink. Swapping the
+   rendered image per colour scheme is what `srcDark` does on the docs site;
+   `content:` on a replaced element is the CSS equivalent. */
+nav img { content: url("https://docs.valueverde.de/img/logo-dark.svg"); }
