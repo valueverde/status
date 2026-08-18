@@ -1,0 +1,59 @@
+# Upptime configuration for the valueverde status page.
+# Docs: https://upptime.js.org
+
+owner: valueverde
+repo: status
+
+sites:
+  - name: Partner API
+    url: https://api.valueverde.de/actuator/health
+    __dangerous__body_down_if_text_missing: '"status":"UP"'
+
+  - name: Partner API (staging)
+    url: https://api.staging.valueverde.de/actuator/health
+    __dangerous__body_down_if_text_missing: '"status":"UP"'
+
+  - name: Token signing keys (JWKS)
+    url: https://api.valueverde.de/.well-known/jwks.json
+    __dangerous__body_down_if_text_missing: '"keys"'
+
+  - name: Partner API contract
+    url: https://api.valueverde.de/v3/api-docs/partner
+    __dangerous__body_down_if_text_missing: '"openapi"'
+
+  - name: Documentation
+    url: https://docs.valueverde.de/
+    __dangerous__body_down_if_text_missing: "valueverde Partner API"
+
+  - name: OpenAPI document
+    url: https://docs.valueverde.de/spec/partner-api.yaml
+    __dangerous__body_down_if_text_missing: "openapi:"
+
+status-website:
+  cname: status.valueverde.de
+  theme: light
+  logoUrl: https://docs.valueverde.de/img/logo.svg
+  name: valueverde status
+  introTitle: valueverde status
+  introMessage: >-
+    Live availability of the valueverde Partner API, its documentation and the
+    published OpenAPI contract. Checked every five minutes from GitHub Actions.
+    Incidents are opened as issues on this repository — watch it to be notified,
+    rather than waiting for us to email.
+  navbar:
+    - title: Status
+      href: /
+    - title: Partner API docs
+      href: https://docs.valueverde.de
+    - title: Incidents
+      href: https://github.com/valueverde/status/issues
+
+# An endpoint must fail twice in a row before an incident opens.
+delay: 5
+
+# Do not set `commitMessages` or `commitPrefix`: Upptime reconstructs uptime and
+# response times by parsing back its own commit messages, and a custom format is
+# one its parser cannot read.
+
+assignees:
+  - adriankodja

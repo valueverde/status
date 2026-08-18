@@ -1,0 +1,32 @@
+# Rolls the raw check history into the response-time numbers the site shows.
+name: Response Time CI
+
+on:
+  schedule:
+    - cron: "0 23 * * *"
+  repository_dispatch:
+    types: [response-time]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: ${{ github.repository }}-upptime-response-time
+  cancel-in-progress: false
+
+jobs:
+  release:
+    name: Check response time
+    runs-on: ubuntu-latest
+    if: "!contains(github.event.head_commit.message, '[skip ci]')"
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ github.head_ref || github.ref_name }}
+          token: ${{ secrets.GH_PAT || github.token }}
+      - uses: upptime/uptime-monitor@v1.43.15
+        with:
+          command: "response-time"
+        env:
+          GH_PAT: ${{ secrets.GH_PAT || github.token }}

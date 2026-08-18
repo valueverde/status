@@ -1,0 +1,32 @@
+# Refreshes README.md's status table from the recorded history.
+name: Summary CI
+
+on:
+  schedule:
+    - cron: "0 0 * * *"
+  repository_dispatch:
+    types: [summary]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: ${{ github.repository }}-upptime-summary
+  cancel-in-progress: false
+
+jobs:
+  release:
+    name: Generate README
+    runs-on: ubuntu-latest
+    if: "!contains(github.event.head_commit.message, '[skip ci]')"
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ github.head_ref || github.ref_name }}
+          token: ${{ secrets.GH_PAT || github.token }}
+      - uses: upptime/uptime-monitor@v1.43.15
+        with:
+          command: "readme"
+        env:
+          GH_PAT: ${{ secrets.GH_PAT || github.token }}

@@ -1,0 +1,35 @@
+# Curls every URL in .upptimerc.yml and commits the result.
+name: Uptime CI
+
+on:
+  schedule:
+    - cron: "*/5 * * * *"
+  repository_dispatch:
+    types: [uptime]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  # Incidents are filed as issues on this repository.
+  issues: write
+
+concurrency:
+  group: ${{ github.repository }}-upptime
+  cancel-in-progress: false
+
+jobs:
+  check:
+    name: Check endpoint status
+    runs-on: ubuntu-latest
+    # The action commits its results here; those commits must not re-trigger it.
+    if: "!contains(github.event.head_commit.message, '[skip ci]')"
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ github.head_ref || github.ref_name }}
+          token: ${{ secrets.GH_PAT || github.token }}
+      - uses: upptime/uptime-monitor@v1.43.15
+        with:
+          command: "update"
+        env:
+          GH_PAT: ${{ secrets.GH_PAT || github.token }}

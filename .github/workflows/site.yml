@@ -1,0 +1,52 @@
+# Builds the static status site and publishes it to GitHub Pages.
+# Pages is configured with GitHub Actions as its source, so the build uploads
+# an artifact rather than pushing to a gh-pages branch.
+name: Static Site CI
+
+on:
+  schedule:
+    - cron: "0 1 * * *"
+  repository_dispatch:
+    types: [static_site]
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - ".upptimerc.yml"
+      - ".github/workflows/site.yml"
+      - "assets/**"
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: ${{ github.repository }}-upptime-site
+  cancel-in-progress: false
+
+jobs:
+  release:
+    name: Build and deploy site
+    runs-on: ubuntu-latest
+    if: "!contains(github.event.head_commit.message, '[skip ci]')"
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ github.head_ref || github.ref_name }}
+          token: ${{ secrets.GH_PAT || github.token }}
+      - name: Generate site
+        uses: upptime/uptime-monitor@v1.43.15
+        with:
+          command: "site"
+        env:
+          GH_PAT: ${{ secrets.GH_PAT || github.token }}
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: "site/status-page/__sapper__/export/"
+      - id: deploy
+        uses: actions/deploy-pages@v4
