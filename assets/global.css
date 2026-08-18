@@ -1,3 +1,12 @@
+/* valueverde status page.
+ *
+ * @import MUST be the first rule in the file — the CSS spec ignores any @import
+ * that follows another rule, silently, and the only symptom is the page
+ * rendering in the system font. The same note is on the portal's index.css for
+ * the same reason.
+ */
+@import url('https://fonts.googleapis.com/css2?family=Gelasio:ital,wght@0,400;0,500;0,600&family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500&display=swap');
+
 body {
   margin: 0;
   font-family: Roboto, -apple-system, BlinkMacSystemFont, Segoe UI, Oxygen, Ubuntu, Cantarell,
@@ -216,12 +225,6 @@ article .graph {
    tokens themselves live in themes/light.css and themes/dark.css, because that
    is the seam upstream already provides; this file owns type and geometry.
    =========================================================================== */
-
-/* Geist for UI and body, Gelasio for the brand display heading — the same
-   pairing as docs.valueverde.de and the portal. Loaded from Google Fonts
-   rather than self-hosted: this is a status page, and it must render when our
-   own infrastructure is the thing that is down. */
-@import url('https://fonts.googleapis.com/css2?family=Gelasio:ital,wght@0,400;0,500;0,600&family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500&display=swap');
 
 :root {
   --vv-font-sans: 'Geist', ui-sans-serif, system-ui, -apple-system, sans-serif;
