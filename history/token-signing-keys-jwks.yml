@@ -1,7 +1,7 @@
 url: https://api.valueverde.de/.well-known/jwks.json
 status: up
 code: 200
-responseTime: 1134
-lastUpdated: 2026-11-06T02:56:52.419Z
+responseTime: 676
+lastUpdated: 2026-11-07T02:26:38.442Z
 startTime: 2026-08-18T09:16:06.867Z
 generator: Upptime <https://github.com/upptime/upptime>
