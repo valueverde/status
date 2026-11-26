@@ -1,7 +1,7 @@
 url: https://api.valueverde.de/actuator/health
 status: up
 code: 200
-responseTime: 1054
-lastUpdated: 2026-11-25T05:07:43.326Z
+responseTime: 888
+lastUpdated: 2026-11-26T04:34:24.162Z
 startTime: 2026-08-18T09:16:04.772Z
 generator: Upptime <https://github.com/upptime/upptime>
