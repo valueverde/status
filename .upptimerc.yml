@@ -4,29 +4,45 @@
 owner: valueverde
 repo: status
 
+# Every site is probed through Globalping from a probe in Germany rather than from
+# the GitHub runner the workflow happens to land on, so the response time is what a
+# client near our users sees. The body check reads only the start of the response,
+# which is where each marker below sits.
 sites:
   - name: Partner API
     url: https://api.valueverde.de/actuator/health
+    type: globalping
+    location: Germany
     __dangerous__body_down_if_text_missing: '"status":"UP"'
 
   - name: Partner API (staging)
     url: https://api.staging.valueverde.de/actuator/health
+    type: globalping
+    location: Germany
     __dangerous__body_down_if_text_missing: '"status":"UP"'
 
   - name: Token signing keys (JWKS)
     url: https://api.valueverde.de/.well-known/jwks.json
+    type: globalping
+    location: Germany
     __dangerous__body_down_if_text_missing: '"keys"'
 
   - name: Partner API contract
     url: https://api.valueverde.de/v3/api-docs/partner
+    type: globalping
+    location: Germany
     __dangerous__body_down_if_text_missing: '"openapi"'
 
   - name: Documentation
     url: https://docs.valueverde.de/
+    type: globalping
+    location: Germany
     __dangerous__body_down_if_text_missing: "valueverde Partner API"
 
   - name: OpenAPI document
     url: https://docs.valueverde.de/spec/partner-api.yaml
+    type: globalping
+    location: Germany
     __dangerous__body_down_if_text_missing: "openapi:"
 
 status-website:
